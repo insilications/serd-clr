@@ -141,7 +141,7 @@ def configure(conf):
                         include_path=str(conf.path.find_node('include')))
 
     if conf.env.BUILD_TESTS:
-        serdi_node = conf.path.get_bld().make_node('serdi_static')
+        serdi_node = conf.path.get_bld().make_node('serdi')
     else:
         serdi_node = conf.path.get_bld().make_node('serdi')
 
@@ -211,24 +211,23 @@ def build(bld):
             **lib_args)
 
     if bld.env.BUILD_TESTS:
-        coverage_flags = [''] if bld.env.NO_COVERAGE else ['--coverage']
-        test_args = {'includes':     ['include'],
-                     'cflags':       coverage_flags,
-                     'linkflags':    coverage_flags,
-                     'lib':          lib_args['lib'],
-                     'install_path': ''}
+        #coverage_flags = [''] if bld.env.NO_COVERAGE else ['--coverage']
+        #test_args = {'includes':     ['include'],
+                     #'cflags':       coverage_flags,
+                     #'linkflags':    coverage_flags,
+                     #'lib':          lib_args['lib'],
+                     #'install_path': ''}
 
         # Profiled static library for test coverage
-        bld(features     = 'c cstlib',
-            source       = lib_source,
-            name         = 'libserd_profiled',
-            target       = 'serd_profiled',
-            defines      = defines + ['SERD_STATIC', 'SERD_INTERNAL'],
-            **test_args)
+        #bld(features     = 'c cstlib',
+            #source       = lib_source,
+            #name         = 'libserd_profiled',
+            #target       = 'serd_profiled',
+            #defines      = defines + ['SERD_STATIC', 'SERD_INTERNAL'],
+            #**lib_args)
 
         # Test programs
-        for prog in [('serdi_static', 'src/serdi.c'),
-                     ('test_env', 'test/test_env.c'),
+        for prog in [('test_env', 'test/test_env.c'),
                      ('test_free_null', 'test/test_free_null.c'),
                      ('test_node', 'test/test_node.c'),
                      ('test_read_chunk', 'test/test_read_chunk.c'),
@@ -236,12 +235,13 @@ def build(bld):
                      ('test_string', 'test/test_string.c'),
                      ('test_uri', 'test/test_uri.c'),
                      ('test_writer', 'test/test_writer.c')]:
-            bld(features     = 'c cprogram',
-                source       = prog[1],
-                use          = 'libserd_profiled',
-                target       = prog[0],
-                defines      = defines + ['SERD_STATIC'],
-                **test_args)
+            test = bld(features     = 'c cprogram',
+                        source       = prog[1],
+                        use          = 'libserd_static',
+                        target       = prog[0],
+                        defines      = defines + ['SERD_STATIC'],
+                        **lib_args)
+            test.install_path = ''
 
     # Utilities
     if bld.env.BUILD_UTILS:
@@ -384,7 +384,7 @@ def earl_assertion(test, passed, asserter):
        datetime.datetime.now().replace(microsecond=0).isoformat())
 
 
-serdi = './serdi_static'
+serdi = './serdi'
 
 
 def test_thru(check, base, path, check_path, flags, isyntax, osyntax, opts=[]):
@@ -444,7 +444,7 @@ def _load_rdf(filename):
     model = {}
     instances = {}
 
-    cmd = _wrapped_command(['./serdi_static', filename])
+    cmd = _wrapped_command(['./serdi', filename])
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     for line in proc.communicate()[0].splitlines():
         matches = re.match(r'<([^ ]*)> <([^ ]*)> <([^ ]*)> \.',
